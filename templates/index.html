@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-950 min-h-screen flex items-center justify-center">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function App() {
+            const [review, setReview] = useState('');
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const analyze = async () => {
+                if (!review.trim()) {
+                    setError('Please enter a review!');
+                    return;
+                }
+                setError('');
+                setLoading(true);
+                setResult(null);
+
+                try {
+                    const res = await fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ review })
+                    });
+                    const data = await res.json();
+                    setResult(data);
+                } catch (err) {
+                    setError('Server error! Make sure Flask is running.');
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="w-full max-w-2xl mx-auto px-4">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h1 className="text-4xl font-bold text-white mb-2">
+                            🎬 Sentiment <span className="text-purple-400">Analyzer</span>
+                        </h1>
+                        <p className="text-gray-400 text-sm">
+                            Powered by Machine Learning • Trained on 50,000 IMDB Reviews
+                        </p>
+                    </div>
+
+                    {/* Card */}
+                    <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl border border-gray-800">
+
+                        {/* Textarea */}
+                        <label className="text-gray-300 text-sm font-medium mb-2 block">
+                            Enter a Movie Review
+                        </label>
+                        <textarea
+                            className="w-full h-36 bg-gray-950 border border-gray-700 rounded-xl p-4 text-white text-sm resize-none outline-none focus:border-purple-500 transition-colors placeholder-gray-600"
+                            placeholder="e.g. This movie was absolutely brilliant! The storyline kept me hooked..."
+                            value={review}
+                            onChange={(e) => setReview(e.target.value)}
+                        />
+
+                        {/* Error */}
+                        {error && (
+                            <p className="text-red-400 text-sm mt-2">{error}</p>
+                        )}
+
+                        {/* Button */}
+                        <button
+                            onClick={analyze}
+                            disabled={loading}
+                            className="w-full mt-4 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                        >
+                            {loading ? '⏳ Analyzing...' : 'Analyze Sentiment →'}
+                        </button>
+
+                        {/* Result */}
+                        {result && (
+                            <div className={`mt-6 p-5 rounded-xl border text-center transition-all ${
+                                result.sentiment === 'POSITIVE'
+                                    ? 'bg-green-950 border-green-700'
+                                    : 'bg-red-950 border-red-700'
+                            }`}>
+                                <div className="text-5xl mb-3">
+                                    {result.sentiment === 'POSITIVE' ? '😊' : '😞'}
+                                </div>
+                                <div className={`text-2xl font-bold mb-1 ${
+                                    result.sentiment === 'POSITIVE' ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                    {result.sentiment}
+                                </div>
+                                <div className="text-gray-400 text-sm">
+                                    Confidence: <span className="text-white font-medium">{result.confidence}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Example buttons */}
+                        <div className="mt-5">
+                            <p className="text-gray-500 text-xs mb-2">Try an example:</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setReview("This movie was absolutely amazing! Best film I've seen this year.")}
+                                    className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                                >
+                                    😊 Positive Example
+                                </button>
+                                <button
+                                    onClick={() => setReview("Terrible movie. Complete waste of time and money.")}
+                                    className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                                >
+                                    😞 Negative Example
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <p className="text-center text-gray-600 text-xs mt-6">
+                        Built with Python • Scikit-learn • Flask • React • TailwindCSS
+                    </p>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
